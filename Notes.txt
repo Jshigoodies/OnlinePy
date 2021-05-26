@@ -1,0 +1,2 @@
+You have to run server script first
+Then you can run as many clients as you want
