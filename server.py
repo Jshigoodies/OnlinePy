@@ -2,49 +2,63 @@ import socket
 from _thread import *
 import sys
 
-server = "192.168.1.110"  # this is my localhost. So it doesn't matter if this shows
+server = "192.168.1.110"
 port = 5555
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Ipv4 address
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 try:
     s.bind((server, port))
 except socket.error as e:
     str(e)
+    print("????")
 
-s.listen(2)  # listens for connections. 2 = only 2 clients can connect
+s.listen(2)
+print("Waiting for a connection, Server Started")
 
-print("Server Started\nWaiting for connection")
+def read_pos(str):
+    str = str.split(",")
+    return int(str[0]), int(str[1])
 
 
-def threaded_client(connection):
+def make_pos(tup):
+    return str(tup[0]) + "," + str(tup[1])
 
+pos = [(0,0),(100,100)]
+
+def threaded_client(conn, player):
+    conn.send(str.encode(make_pos(pos[player])))
     reply = ""
     while True:
         try:
-            data = connection.recv(2048)
-            reply = data.decode("utf-8")  # when the server receives information, it is encoded. So we have to decode it to read it. utf-8 is a format
-            if not data:  # server gets a connection, but client has no information: break
+            data = read_pos(conn.recv(2048).decode())
+            pos[player] = data
+
+            if not data:
                 print("Disconnected")
                 break
             else:
-                print("Received: ", reply)
-                print("Sending: ", reply)
+                if player == 1:
+                    reply = pos[0]
+                else:
+                    reply = pos[1]
 
-            connection.sendall(str.encode(reply))
-        except Exception:
+                print("Received: ", data)
+                print("Sending : ", reply)
+
+            conn.sendall(str.encode(make_pos(reply)))
+        except:
             break
 
+    print("Lost connection")
+    conn.close()
 
-while True:  # continuously find connections until 2 are found
-    connection, address = s.accept()  # accept any connection. Stores connection and address
-    print("Connected to: ", address)
+currentPlayer = 0
+while True:
+    conn, addr = s.accept()
+    print("Connected to:", addr)
 
-    start_new_thread(threaded_client(), (connection,))
+    start_new_thread(threaded_client, (conn, currentPlayer))
+    currentPlayer += 1
 
-
-# This is actually pretty cool.
-# I basically multi threading.
-# Thread is basically another
-# process that is going
-# in the background. In this case the def method called
-# threaded_client is going to happen simultaneously without waiting for the other initial method to finish
+    # I had to copy it due to some werid goddam error that i couldn't find why
