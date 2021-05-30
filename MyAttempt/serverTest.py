@@ -1,40 +1,29 @@
-# Honestly, I'm still too stupid to figure this out.
-
 import socket
-from _thread import *
-import sys
+from threading import *
 
-server = "192.168.1.110"
+serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host = "192.168.1.110"
 port = 5555
+print(host)
+print(port)
+serversocket.bind((host, port))
 
-s = socket.socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+class client(Thread):
+    def __init__(self, socket, address):
+        Thread.__init__(self)
+        self.sock = socket
+        self.addr = address
+        self.start()
 
-s.bind(server, port)  # connect to localhost and at that port
+    def run(self):
+        while 1:
+            print('Client sent:', self.sock.recv(1024).decode())
+            self.sock.send('Oi you sent something to me'.encode())
 
-s.listen(2) # look for 2 connections
 
-def threaded_client(conn):
-    conn.send(str.encode("Connecting"))
-
-    reply = ""
-    while True:
-        try:
-            data = conn.recv(2048)
-            reply = data.decode("utf-8")
-
-            if not data:
-                print("Disconnected")
-                break
-            else:
-                print("Received: ", reply)
-                print("Sending : ", reply)
-        except:
-            break
-    print("Lost connection")
-    conn.close()
-
-while True:
-    conn, addr = s.accept()
-    print("Connected to:", addr)
-
-    start_new_thread(threaded_client, (conn,)) # multi tasking. Or known as multi threading. Multiple processes go in the background.
+# runner
+serversocket.listen(5)
+print ('server started and listening')
+while 1:  # infinite loops
+    clientsocket, address = serversocket.accept() # literally the same thing
+    client(clientsocket, address)
